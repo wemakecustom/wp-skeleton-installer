@@ -17,7 +17,7 @@
         "scripts/update-wpskeleton.php"
     ],
     "require": {
-        "johnpbloch/wordpress": ">=3.8.1,<3.9 | >=3.9.1,<4.0",
+        "johnpbloch/wordpress": ">=3.8.1,<3.9 | >=3.9.1",
         "wemakecustom/composer-script-utils": "*"
     }
 }
