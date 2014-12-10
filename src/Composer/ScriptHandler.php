@@ -28,7 +28,11 @@ class ScriptHandler
         $web_dir  = getcwd() . '/' . (empty($extras['web-dir']) ? 'htdocs' : $extras['web-dir']);
         $wp_dir   = PackageLocator::getPackagePath($event->getComposer(), static::$wpPackage);
 
-        $io->write(sprintf('<info>Symlinking %s/* into %s/</info>', str_replace(getcwd().'/', '', $wp_dir), str_replace(getcwd().'/', '', $web_dir)));
+        $io->write(sprintf(
+            'Symlinking <info>%s/*</info> into <info>%s/</info>',
+            str_replace(getcwd().'/', '', $wp_dir),
+            str_replace(getcwd().'/', '', $web_dir)
+        ));
 
         $symlink = function ($link_dir, $target_dir, $file, $target_file = null) use ($io) {
             if (null === $target_file) {
@@ -49,7 +53,7 @@ class ScriptHandler
             if (file_exists($link)) {
                 $io->write(sprintf('<error>Error while creating a symlink to %s: file exists</error>', str_replace(getcwd().'/', '', $link)));
             } else {
-                $io->write(sprintf('<info>Creating symlink %s -> %s.</info>', str_replace(getcwd().'/', '', $link), $target));
+                $io->write(sprintf('Creating symlink <info>%s</info> -> <info>%s</info>.', str_replace(getcwd().'/', '', $link), $target));
                 symlink($target, $link);
             }
         };
@@ -90,7 +94,7 @@ class ScriptHandler
         if ($mu_loader) {
             if (!file_exists(dirname($mu_loader) . '/mu-require.php')
                 || md5_file("$mu_loader/mu-require.php") != md5_file(dirname($mu_loader) . '/mu-require.php')) {
-                $io->write('<info>Installing mu-require.php</info>');
+                $io->write('Installing <info>mu-require.php</info>');
                 copy("$mu_loader/mu-require.php", dirname($mu_loader) . '/mu-require.php');
             }
         }
@@ -98,13 +102,13 @@ class ScriptHandler
         $wp_load = "$wp_dir/wp-load.php";
         $abspath = $web_dir . '/';
 
-        $io->write(sprintf('<info>Setting ABSPATH to %s</info>', $abspath));
+        $io->write(sprintf('Setting <info>ABSPATH</info> to <info>%s</info>', $abspath));
 
         $define = "define( 'ABSPATH', '$abspath' );";
         file_put_contents($wp_load, preg_replace("/^define\(\s*'ABSPATH'.+$/m", $define, file_get_contents($wp_load)));
 
         if (!file_exists("$web_dir/wp-config.php")) {
-            $io->write('<info>Installing default wp-config.php</info>');
+            $io->write('Installing default <info>wp-config.php</info>');
             copy("$web_dir/wp-config-sample.php", "$web_dir/wp-config.php");
         }
     }
@@ -121,7 +125,7 @@ class ScriptHandler
         if (!is_file($file)) {
             if (is_writable(dirname($file))) {
                 $api = 'https://api.wordpress.org/secret-key/1.1/salt/';
-                $io->write(sprintf('<info>Generating secret keys using %s</info>', $api));
+                $io->write(sprintf('Generating secret keys using <info>%s</info>', $api));
 
                 $rnd = "<?php\n\n" . file_get_contents($api);
                 file_put_contents($file, $rnd);
