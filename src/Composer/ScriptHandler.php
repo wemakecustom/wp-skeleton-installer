@@ -125,15 +125,32 @@ class ScriptHandler
 
     private static function installWpConfig(IOInterface $io, $web_dir)
     {
-        if (!file_exists("${web_dir}/wp-config.php")) {
+        if (file_exists("${web_dir}/wp-config.php")) {
+            $changed = false;
+            $config  = file_get_contents("${web_dir}/wp-config.php");
+
+            // Old version of wp-config did not require wp-settings. wp-cli needs it, so automatically add it
+            if (!preg_match('/^\s*require.+wp-settings\.php/m', $config)) {
+                $io->write('Adding missing require wp-settings.php to <info>wp-config.php</info>.');
+                $config = trim($config) . "\nrequire_once(__DIR__ . '/wp-settings.php');\n";
+                $changed = true;
+            }
+
+            // comment constants now in wp-config-base.php
+            foreach (array('WPLANG', 'WP_DEBUG', 'WP_DEBUG_DISPLAY', 'WP_DEBUG_LOG') as $constant) {
+                if (preg_match("/^\s*define *\((['\"])${constant}\1.+$/m", $config, $matches)) {
+                    $config  = str_replace($matches[0], '// ' . $matches[0], $config);
+                    $changed = true;
+                    $io->write("Commenting <info>${constant}</info> in wp-config.php.");
+                }
+            }
+
+            if ($changed) {
+                file_put_contents("${web_dir}/wp-config.php", $config);
+            }
+        } else {
             $io->write('Installing default <info>wp-config.php</info>.');
             copy("${web_dir}/wp-config-sample.php", "${web_dir}/wp-config.php");
-        }
-
-        // Old version of wp-config did not require wp-settings. wp-cli needs it, so automatically add it
-        if (!preg_match('/^\s*require.+wp-settings\.php/m', file_get_contents("${web_dir}/wp-config.php"))) {
-            $io->write('Adding missing require wp-settings.php to <info>wp-config.php</info>.');
-            file_put_contents("${web_dir}/wp-config.php", "\nrequire_once(__DIR__ . '/wp-settings.php');\n", FILE_APPEND);
         }
     }
 
