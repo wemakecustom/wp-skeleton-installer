@@ -138,7 +138,7 @@ class ScriptHandler
 
             // comment constants now in wp-config-base.php
             foreach (array('WPLANG', 'WP_DEBUG', 'WP_DEBUG_DISPLAY', 'WP_DEBUG_LOG') as $constant) {
-                if (preg_match("/^\s*define *\((['\"])${constant}\1.+$/m", $config, $matches)) {
+                if (preg_match("/^\s*define *\((['\"])${constant}\\1.+$/m", $config, $matches)) {
                     $config  = str_replace($matches[0], '// ' . $matches[0], $config);
                     $changed = true;
                     $io->write("Commenting <info>${constant}</info> in wp-config.php.");
