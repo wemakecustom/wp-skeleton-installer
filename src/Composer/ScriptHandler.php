@@ -7,6 +7,7 @@ use Composer\Script\Event;
 use Composer\Composer;
 use WMC\Composer\Utils\Filesystem\PathUtil;
 use WMC\Composer\Utils\Composer\PackageLocator;
+use WMC\Composer\Utils\ConfigFile\ConfigDir;
 
 class ScriptHandler
 {
@@ -14,12 +15,14 @@ class ScriptHandler
 
     public static function handle(Event $event)
     {
-        ConfHandler::updateFiles($event);
-        self::wordpressSymlinks($event);
         self::wordpressTweaks($event);
+        self::wordpressSymlinks($event);
         self::generateRandomKeys($event);
     }
 
+    /**
+     * @deprecated should be private
+     */
     public static function wordpressSymlinks(Event $event)
     {
         $composer = $event->getComposer();
@@ -29,7 +32,7 @@ class ScriptHandler
         $wp_dir   = PackageLocator::getPackagePath($event->getComposer(), static::$wpPackage);
 
         $io->write(sprintf(
-            'Symlinking <info>%s/*</info> into <info>%s/</info>',
+            'Symlinking <info>%s/*</info> into <info>%s/</info>.',
             str_replace(getcwd().'/', '', $wp_dir),
             str_replace(getcwd().'/', '', $web_dir)
         ));
@@ -82,15 +85,35 @@ class ScriptHandler
         $symlink($wp_dir, $web_dir, "wp-config.php");
     }
 
+    /**
+     * @deprecated should be private
+     */
     public static function wordpressTweaks(Event $event)
     {
-        $composer = $event->getComposer();
-        $io       = $event->getIO();
-        $extras   = $composer->getPackage()->getExtra();
-        $web_dir  = getcwd() . '/' . (empty($extras['web-dir']) ? 'htdocs' : $extras['web-dir']);
-        $wp_dir   = PackageLocator::getPackagePath($event->getComposer(), static::$wpPackage);
+        $composer  = $event->getComposer();
+        $io        = $event->getIO();
+        $extras    = $composer->getPackage()->getExtra();
+        $web_dir   = getcwd() . '/' . (empty($extras['web-dir']) ? 'htdocs' : $extras['web-dir']);
+        $confs_dir = getcwd() . '/' . (empty($extras['confs-dir']) ? 'confs' : $extras['confs-dir']);
 
-        $mu_loader = PackageLocator::getPackagePath($event->getComposer(), 'wemakecustom/wp-mu-loader');
+        self::installMuRequire($io, $composer);
+        self::rsync($io, dirname(dirname(__DIR__)) . '/dist/confs', $confs_dir);
+        self::rsync($io, dirname(dirname(__DIR__)) . '/dist/htdocs', $web_dir);
+        self::verifyGitignore($io, dirname($web_dir) . '/.gitignore');
+        self::installWpConfig($io, $web_dir);
+        self::configureAbspath($io, $composer, $web_dir);
+        self::updateConfigs($io, $confs_dir);
+    }
+
+    private static function updateConfigs(IOInterface $io, $confs_dir)
+    {
+        $configDir = new ConfigDir($io);
+        $configDir->updateDir($confs_dir, "${confs_dir}/samples");
+    }
+
+    private static function installMuRequire(IOInterface $io, $composer)
+    {
+        $mu_loader = PackageLocator::getPackagePath($composer, 'wemakecustom/wp-mu-loader');
         if ($mu_loader) {
             if (!file_exists(dirname($mu_loader) . '/mu-require.php')
                 || md5_file("$mu_loader/mu-require.php") != md5_file(dirname($mu_loader) . '/mu-require.php')) {
@@ -98,21 +121,111 @@ class ScriptHandler
                 copy("$mu_loader/mu-require.php", dirname($mu_loader) . '/mu-require.php');
             }
         }
+    }
 
-        $wp_load = "$wp_dir/wp-load.php";
-        $abspath = $web_dir . '/';
+    private static function installWpConfig(IOInterface $io, $web_dir)
+    {
+        if (!file_exists("${web_dir}/wp-config.php")) {
+            $io->write('Installing default <info>wp-config.php</info>.');
+            copy("${web_dir}/wp-config-sample.php", "${web_dir}/wp-config.php");
+        }
 
-        $io->write(sprintf('Setting <info>ABSPATH</info> to <info>%s</info>', $abspath));
-
-        $define = "define( 'ABSPATH', '$abspath' );";
-        file_put_contents($wp_load, preg_replace("/^define\(\s*'ABSPATH'.+$/m", $define, file_get_contents($wp_load)));
-
-        if (!file_exists("$web_dir/wp-config.php")) {
-            $io->write('Installing default <info>wp-config.php</info>');
-            copy("$web_dir/wp-config-sample.php", "$web_dir/wp-config.php");
+        // Old version of wp-config did not require wp-settings. wp-cli needs it, so automatically add it
+        if (!preg_match('/^\s*require.+wp-settings\.php/m', file_get_contents("${web_dir}/wp-config.php"))) {
+            $io->write('Adding missing require wp-settings.php to <info>wp-config.php</info>.');
+            file_put_contents("${web_dir}/wp-config.php", "\nrequire_once(__DIR__ . '/wp-settings.php');\n", FILE_APPEND);
         }
     }
 
+    private static function configureAbspath(IOInterface $io, $composer, $web_dir)
+    {
+        $wp_dir   = PackageLocator::getPackagePath($composer, static::$wpPackage);
+        $wp_load = "$wp_dir/wp-load.php";
+        $abspath = $web_dir . '/';
+
+        if (!is_file($wp_load)) {
+            $io->write(sprintf(
+                '<error>Wordpress installation is broken, %s is missing.</error>',
+                str_replace(getcwd().'/', '', $wp_load)
+            ));
+        }
+
+        $io->write(sprintf('Setting <info>ABSPATH</info> to <info>%s</info>.', $abspath));
+
+        $define = "define( 'ABSPATH', '$abspath' );";
+        file_put_contents($wp_load, preg_replace("/^define\(\s*'ABSPATH'.+$/m", $define, file_get_contents($wp_load)));
+    }
+
+    private static function rsync(IOInterface $io, $source, $destination)
+    {
+        if (!is_dir($destination)) {
+            mkdir($destination, 0777, true);
+        }
+        foreach (scandir($source) as $file) {
+            if ($file == '.' || $file == '..') {
+                continue;
+            }
+            if (is_dir("${source}/${file}")) {
+                self::rsync($io, "${source}/${file}", "${destination}/${file}");
+            } elseif (!is_file("${destination}/${file}") || md5_file("${destination}/${file}") !== md5_file("${source}/${file}")) {
+                $io->write(sprintf(
+                    'Installing file <info>%s</info>.',
+                    str_replace(getcwd().'/', '', "${destination}/${file}")
+                ));
+                copy("${source}/${file}", "${destination}/${file}");
+            }
+        }
+    }
+
+    /**
+     * Merges the dist gitignore to the project’s one
+     *
+     * @param  IOInterface $io
+     * @param  string $destination Absolute path to target .gitignore
+     */
+    private static function verifyGitignore(IOInterface $io, $destination)
+    {
+        $source = dirname(dirname(__DIR__)) . '/dist/gitignore';
+
+        if (is_file($destination)) {
+            // do not consider commented or empty lines
+            $parseLines = function($file) {
+                $lines = file($file);
+                $lines = array_filter($lines, function($line) { return !preg_match('/^(#|\s*$)/', $line); });
+                $lines = array_map('trim', $lines);
+
+                return $lines;
+            };
+            $lines     = $parseLines($source);
+            $existings = $parseLines($destination);
+            $missings  = array_diff($lines, $existings);
+
+            if (!empty($missings)) {
+                $io->write(sprintf(
+                    '<info>%s</info> is missing those lines:',
+                    str_replace(getcwd().'/', '', $destination)
+                ));
+                foreach ($missings as $missing) {
+                    $io->write('  • ' . $missing);
+                }
+                if ($io->askConfirmation('Would you like to add them ? (y/N) ', false)) {
+                    $io->write(sprintf('Adding <info>%s</info> lines to gitignore.', count($missings)));
+                    file_put_contents($destination, PHP_EOL . implode(PHP_EOL, $missings) . PHP_EOL, FILE_APPEND);
+                }
+            }
+        } else {
+            // do not prompt, add file automatically
+            $io->write(sprintf(
+                'Installing default <info>%s</info>.',
+                str_replace(getcwd().'/', '', $destination)
+            ));
+            copy($source, $destination);
+        }
+    }
+
+    /**
+     * @deprecated should be private
+     */
     public static function generateRandomKeys(Event $event)
     {
         $composer = $event->getComposer();

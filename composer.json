@@ -18,6 +18,25 @@
     ],
     "require": {
         "johnpbloch/wordpress": ">=3.8.1,<3.9 | >=3.9.1",
+        "wp-cli/wp-cli": "*",
         "wemakecustom/composer-script-utils": "*"
+    },
+    "scripts": {
+        "post-install-cmd": [
+            "WMC\\Wordpress\\SkeletonInstaller\\Composer\\ScriptHandler::handle"
+        ],
+        "post-update-cmd": [
+            "WMC\\Wordpress\\SkeletonInstaller\\Composer\\ScriptHandler::handle"
+        ]
+    },
+    "extra": {
+        "confs-dir": "test/confs",
+        "web-dir": "test/htdocs",
+        "wordpress-install-dir": "vendor/wordpress/wordpress",
+        "installer-paths": {
+            "test/htdocs/wp-content/plugins/{$name}/": ["type:wordpress-plugin"],
+            "test/htdocs/wp-content/mu-plugins/{$name}/": ["type:wordpress-muplugin"],
+            "test/htdocs/wp-content/themes/composer/{$name}/": ["type:wordpress-theme"]
+        }
     }
 }
