@@ -1,3 +1,10 @@
-; Files are downloaded using POT Generator
-*
-!.gitignore
+; This file is managed by wp-skeleton-installer
+
+/cache.json
+
+; MO are compiled using POT Generator
+*.mo
+
+; Core translations are downloaded using POT Generator
+/*.po
+/*.pot
