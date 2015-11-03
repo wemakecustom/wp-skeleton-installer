@@ -59,3 +59,6 @@ if (isset($_SERVER['HTTP_HOST'])) {
 if (!defined('ABSPATH')) {
     define('ABSPATH', dirname(__FILE__) . '/');
 }
+
+/** Disallow editing files plugins and themes **/
+define('DISALLOW_FILE_EDIT', true);
