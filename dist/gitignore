@@ -2,6 +2,7 @@
 /vendor
 *.log
 /htdocs/random-keys.php
+/htdocs/wp-content/languages/**/*.pot
 
 # Symlinked by composer hooks
 /htdocs/index.php
