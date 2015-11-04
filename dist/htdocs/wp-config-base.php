@@ -32,7 +32,6 @@ define('DB_CHARSET', 'utf8');
 define('DB_COLLATE', '');
 
 
-
 $ini_file = dirname(dirname(__FILE__)) . '/confs/wp-config.ini';
 $config = array(
     'WPLANG'   => "en_US",

@@ -23,7 +23,6 @@
 /htdocs/xmlrpc.php
 /htdocs/wp-content/themes/default-themes
 
-
 # W3 Total Cache
 /htdocs/wp-content/w3-total-cache*
 /htdocs/wp-content/w3tc-config
