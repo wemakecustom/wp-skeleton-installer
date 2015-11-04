@@ -38,14 +38,17 @@
 !/htdocs/wp-content/mu-plugins/*.php
 /htdocs/wp-content/mu-plugins/mu-require.php
 
+# Themes managed by composer
 /htdocs/wp-content/themes/composer
 
 # Bower components
 /htdocs/wp-content/components
 
+# Sitemaps generated
 /htdocs/sitemap.xml
 /htdocs/sitemap.xml.gz
 
+# Folders to be keep like that
 /htdocs/wp-content/uploads
 /htdocs/wp-content/upgrade
 /htdocs/wp-content/cache
