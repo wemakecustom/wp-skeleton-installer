@@ -2,6 +2,7 @@
 /vendor
 *.log
 /htdocs/random-keys.php
+/htdocs/wp-content/languages/**/*.pot
 
 # Symlinked by composer hooks
 /htdocs/index.php
@@ -22,7 +23,6 @@
 /htdocs/xmlrpc.php
 /htdocs/wp-content/themes/default-themes
 
-
 # W3 Total Cache
 /htdocs/wp-content/w3-total-cache*
 /htdocs/wp-content/w3tc-config
@@ -37,14 +37,17 @@
 !/htdocs/wp-content/mu-plugins/*.php
 /htdocs/wp-content/mu-plugins/mu-require.php
 
+# Themes managed by composer
 /htdocs/wp-content/themes/composer
 
 # Bower components
 /htdocs/wp-content/components
 
+# Sitemaps generated
 /htdocs/sitemap.xml
 /htdocs/sitemap.xml.gz
 
+# Folders to be keep like that
 /htdocs/wp-content/uploads
 /htdocs/wp-content/upgrade
 /htdocs/wp-content/cache

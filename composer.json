@@ -17,7 +17,7 @@
         "scripts/update-wpskeleton.php"
     ],
     "require": {
-        "johnpbloch/wordpress": ">=3.8.1,<3.9 | >=3.9.1",
+        "johnpbloch/wordpress": "^4.0",
         "wp-cli/wp-cli": "*",
         "wemakecustom/composer-script-utils": "*",
         "wemakecustom/wp-pot-generator": "~2.0@dev"

@@ -32,7 +32,6 @@ define('DB_CHARSET', 'utf8');
 define('DB_COLLATE', '');
 
 
-
 $ini_file = dirname(dirname(__FILE__)) . '/confs/wp-config.ini';
 $config = array(
     'WPLANG'   => "en_US",
@@ -59,3 +58,6 @@ if (isset($_SERVER['HTTP_HOST'])) {
 if (!defined('ABSPATH')) {
     define('ABSPATH', dirname(__FILE__) . '/');
 }
+
+/** Disallow editing files plugins and themes **/
+define('DISALLOW_FILE_EDIT', true);
