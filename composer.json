@@ -19,7 +19,7 @@
     "require": {
         "johnpbloch/wordpress": "^4.0",
         "wp-cli/wp-cli": "*",
-        "wemakecustom/composer-script-utils": "*",
+        "wemakecustom/composer-script-utils": "^1.0",
         "wemakecustom/wp-pot-generator": "~2.0@dev"
     },
     "scripts": {
